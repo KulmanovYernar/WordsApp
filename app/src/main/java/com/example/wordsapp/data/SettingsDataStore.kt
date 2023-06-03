@@ -15,25 +15,31 @@ import java.io.IOException
 
 
 private const val LAYOUT_PREFERENCE_NAME = "layout_preferences"
-
+private val IS_LINEAR_LAYOUT_MANAGER = booleanPreferencesKey("is_linear_layout_manager")
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
     name = LAYOUT_PREFERENCE_NAME
 )
 
 class SettingsDataStore(context: Context) {
-    private val IS_LINEAR_LAYOUT_MANAGER = booleanPreferencesKey("is_linear_layout_manager")
+
+
+    val preferenceFlow: Flow<Boolean> = context.dataStore.data
+        .catch {
+            if (it is IOException) {
+                it.printStackTrace()
+                emit(emptyPreferences())
+            } else {
+                throw it
+            }
+        }
+        .map { preferences ->
+            preferences[IS_LINEAR_LAYOUT_MANAGER] ?: true
+        }
+
     suspend fun saveLayoutToPreferenceStore(isLinearLayoutManager: Boolean, context: Context) {
-        val preferenceFlow: Flow<Boolean> = context.dataStore.data
-            .catch {
-                if (it is IOException) {
-                    it.printStackTrace()
-                    emit(emptyPreferences())
-                } else {
-                    throw it
-                }
-            }
-            .map { preferences ->
-                preferences[IS_LINEAR_LAYOUT_MANAGER] ?: true
-            }
+        context.dataStore.edit { preferences ->
+            preferences[IS_LINEAR_LAYOUT_MANAGER] = isLinearLayoutManager
+        }
+
     }
 }
